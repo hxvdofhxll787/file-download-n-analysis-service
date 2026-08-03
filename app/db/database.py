@@ -1,24 +1,25 @@
-from sqlalchemy import create_engine
-from sqlalchemy.orm import DeclarativeBase, sessionmaker
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.orm import DeclarativeBase
 from app.core.config import settings
 
 DATABASE_URL = (
-    f"postgresql://{settings.POSTGRES_USER}:"
+    f"postgresql+asyncpg://"
+    f"{settings.POSTGRES_USER}:"
     f"{settings.POSTGRES_PASSWORD}@"
     f"{settings.POSTGRES_HOST}:"
     f"{settings.POSTGRES_PORT}/"
     f"{settings.POSTGRES_DB}"
 )
 
-engine = create_engine(
+engine = create_async_engine(
     DATABASE_URL,
     echo=True,
 )
 
-SessionLocal = sessionmaker(
+AsyncSessionLocal = async_sessionmaker(
     bind=engine,
-    autoflush=False,
-    autocommit=False,
+    expire_on_commit=False,
+    class_=AsyncSession,
 )
 
 

@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from app.core.config import settings
 from fastapi import Depends
 from sqlalchemy import text
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.session import get_db
 
 app = FastAPI(
@@ -15,9 +15,9 @@ async def root():
     return {"message": settings.APP_NAME}
 
 @app.get("/health")
-def health(db: Session = Depends(get_db)):
-    db.execute(text("SELECT 1"))
+async def health(db: AsyncSession = Depends(get_db)):
+    await db.execute(text("SELECT 1"))
 
     return {
-        "status": "ok"
+        "status": "ok",
     }
