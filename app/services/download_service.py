@@ -4,15 +4,21 @@ from io import BytesIO
 
 from app.clients.remote_api import RemoteAPIClient
 from app.core.config import settings
+from app.services.download_state import DownloadState
 from app.services.file_service import FileService
+from app.core.logger import logger
 
 class DownloadService:
     def __init__(self, file_service: FileService):
         self.file_service = file_service
+        self.state = DownloadState()
 
     async def download_all(self) -> None:
-        storage = Path(settings.FILES_STORAGE_PATH)
+        self.state.start()
 
+        logger.info("Начало загрузки")
+
+        storage = Path(settings.FILES_STORAGE_PATH)
         storage.mkdir(parents=True, exist_ok=True)
 
         async with RemoteAPIClient() as client:
@@ -21,6 +27,10 @@ class DownloadService:
 
                 if not names:
                     break
+
+                self.state.total_names += len(names)
+
+                logger.info("Получено %s файлов", len(names))
 
                 batches = self._split_batches(names, 3)
 
@@ -33,6 +43,18 @@ class DownloadService:
                         await self.file_service.save(filename=path, path=str(path))
 
                     await client.mark_downloaded(batch)
+
+                    self.state.downloaded += len(batch)
+
+                    logger.info(
+                        "Скачано %s из %s файлов",
+                        self.state.downloaded,
+                        self.state.total_names,
+                    )
+
+        self.state.finish()
+
+        logger.info("Загрузка завершена")
 
     def _split_batches(self, items: list[str], size: int):
         for i in range(0, len(items), size):
