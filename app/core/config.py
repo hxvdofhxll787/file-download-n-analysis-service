@@ -29,4 +29,9 @@ class Settings:
 
     REMOTE_API_URL = os.getenv("REMOTE_API_URL")
 
+    FILES_STORAGE_PATH = os.getenv(
+        "FILES_STORAGE_PATH",
+        "storage/files"
+    )
+
 settings = Settings()
