@@ -27,4 +27,6 @@ class Settings:
             f"{self.POSTGRES_DB}"
         )
 
+    REMOTE_API_URL = os.getenv("REMOTE_API_URL")
+
 settings = Settings()
