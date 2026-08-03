@@ -1,0 +1,39 @@
+services:
+  app:
+    build: .
+    container_name: file-download-and-analysis-app
+
+    volumes:
+      - .:/app
+
+    env_file:
+      - .env
+
+    ports:
+      - "8000:8000"
+
+    depends_on:
+      - db
+
+    restart: unless-stopped
+
+  db:
+    image: postgres:17
+
+    container_name: file-download-and-analysis-db
+
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+
+    ports:
+      - "5432:5432"
+
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
