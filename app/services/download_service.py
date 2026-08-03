@@ -4,14 +4,14 @@ from io import BytesIO
 
 from app.clients.remote_api import RemoteAPIClient
 from app.core.config import settings
-from app.services.download_state import DownloadState
+from app.services.download_state import download_state
 from app.services.file_service import FileService
 from app.core.logger import logger
 
 class DownloadService:
     def __init__(self, file_service: FileService):
         self.file_service = file_service
-        self.state = DownloadState()
+        self.state = download_state()
 
     async def download_all(self) -> None:
         self.state.start()

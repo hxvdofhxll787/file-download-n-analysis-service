@@ -16,3 +16,5 @@ class DownloadState:
 
     def finish(self) -> None:
         self.running = False
+
+download_state = DownloadState()
