@@ -1,4 +1,3 @@
-from collections.abc import AsyncGenerator
 from pathlib import Path
 from io import BytesIO
 from zipfile import ZipFile
