@@ -3,14 +3,23 @@ from fastapi import APIRouter
 from app.services import download_state
 from app.services.download_state import download_state
 
-router = APIRouter(prefix="/status", tags=["Download"])
+router = APIRouter(
+    prefix="/status",
+    tags=["Download"],
+)
 
 
 @router.get("")
-async def status():
+async def get_status(
+        service: DownloadService = Depends(get_download_service),
+):
+    state = service.get_status()
+
     return {
-        "running": download_state.running,
-        "started_at": download_state.started_at,
-        "downloaded": download_state.downloaded,
-        "total": download_state.total_names,
+        "running": state.running,
+        "started_at": state.started_at,
+        "finished_at": state.finished_at,
+        "total": state.total_names,
+        "downloaded": state.downloaded,
+        "error": state.error,
     }
