@@ -1,7 +1,7 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 
-from app.services import download_state
-from app.services.download_state import download_state
+from app.core.dependencies import get_download_service
+from app.services.download_service import DownloadService
 
 router = APIRouter(
     prefix="/status",
