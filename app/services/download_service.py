@@ -4,63 +4,95 @@ from io import BytesIO
 
 from app.clients.remote_api import RemoteAPIClient
 from app.core.config import settings
-from app.services.download_state import download_state
+from app.services.download_state import DownloadState
 from app.services.file_service import FileService
 from app.core.logger import logger
 
 class DownloadService:
     def __init__(self, file_service: FileService):
         self.file_service = file_service
-        self.state = download_state()
+        self.state = DownloadState()
 
     async def download_all(self) -> None:
         self.state.start()
 
-        logger.info("Начало загрузки")
+        logger.info("Начало загрузки файлов")
 
         storage = Path(settings.FILES_STORAGE_PATH)
         storage.mkdir(parents=True, exist_ok=True)
 
-        async with RemoteAPIClient() as client:
-            while True:
-                names = await client.get_file_names()
+        try:
+            async with RemoteAPIClient() as client:
+                while True:
+                    names = await client.get_file_names()
 
-                if not names:
-                    break
+                    if not names:
+                        break
 
-                self.state.total_names += len(names)
-
-                logger.info("Получено %s файлов", len(names))
-
-                batches = self._split_batches(names, 3)
-
-                for batch in batches:
-                    archive = await client.download_files(batch)
-
-                    paths = self._extract_archive(archive, storage)
-
-                    for path in paths:
-                        await self.file_service.save(filename=path, path=str(path))
-
-                    await client.mark_downloaded(batch)
-
-                    self.state.downloaded += len(batch)
+                    self.state.total_names += len(names)
 
                     logger.info(
-                        "Скачано %s из %s файлов",
-                        self.state.downloaded,
-                        self.state.total_names,
+                        "Получено %s имен файлов",
+                        len(names),
                     )
 
-        self.state.finish()
+                    for batch in self._split_batches(names, 3):
+                        logger.info(
+                            "Скачивание группы файлов: %s",
+                            batch,
+                        )
 
-        logger.info("Загрузка завершена")
+                        archive = await client.download_files(batch)
 
-    def _split_batches(self, items: list[str], size: int):
+                        paths = self._extract_archive(
+                            archive,
+                            storage,
+                        )
+
+                        for path in paths:
+                            await self.file_service.save(
+                                filename=path.name,
+                                path=str(path),
+                            )
+
+                        await client.mark_downloaded(batch)
+
+                        self.state.downloaded += len(batch)
+
+                        logger.info(
+                            "Скачано %s файлов",
+                            self.state.downloaded,
+                        )
+
+        except Exception as exc:
+            self.state.set_error(str(exc))
+            logger.exception("Ошибка во время загрузки файлов")
+            raise
+
+        finally:
+            self.state.finish()
+
+        logger.info(
+            "Загрузка завершена. Скачано %s файлов",
+            self.state.downloaded,
+        )
+
+    def get_state(self) -> DownloadState:
+        return self.state
+
+    @staticmethod
+    def _split_batches(
+        items: list[str],
+        size: int,
+    ):
         for i in range(0, len(items), size):
             yield items[i:i + size]
 
-    def _extract_archive(self, archive: bytes, storage: Path) -> list[Path]:
+    @staticmethod
+    def _extract_archive(
+        archive: bytes,
+        storage: Path,
+    ) -> list[Path]:
         result = []
 
         with ZipFile(BytesIO(archive)) as zip_file:
